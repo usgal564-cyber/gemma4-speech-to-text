@@ -1,0 +1,32 @@
+services:
+  asr:
+    image: ghcr.io/usgal564-cyber/gemma4-speech-to-text:latest
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
+    environment:
+      # Optional: higher HF rate limits / private repos
+      - HF_TOKEN=${HF_TOKEN:-}
+      # - ADAPTER_DIR=rookie-systems/gemma-4-audio-asr-mn-adapter
+      # - MIN_FREE_GB=12
+    volumes:
+      # Persist the ~17GB model download across container restarts
+      - hf_cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7860/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      # First start downloads the model, then loads it into RAM
+      start_period: 20m
+    # GPU hosting: build the image with TORCH_VARIANT=cu128 and uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+volumes:
+  hf_cache:
